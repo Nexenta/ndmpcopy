@@ -1,0 +1,77 @@
+#
+# Copyright (c) 1999 Network Appliance, Inc. All Rights Reserved.
+#
+# Copyright 2009 Sun Microsystems, Inc.  All rights reserved.
+# Use is subject to license terms.
+#
+# Copyright 2015 Nexenta Systems, Inc.  All rights reserved.
+#
+
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to
+# the following conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+# OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
+#
+
+INTRODUCTION
+============
+This tool originally written by NetApp(R) underwent extensive rewrite
+at Sun(R) in order to be usable as a test tool for implementation of NDMP
+daemon on Solaris(R). Until opensolaris(R) was shut down by Oracle(R) it
+was available from opensolaris.org website for download. Nexenta(R)
+did changes to build system to get rid of old cruft and make it usable
+with gmake and gcc. Still the only supported platform is Solaris/Illumos.
+
+DESCRIPTION
+===========
+Ndmpcopy transfers data between filers using the Network Data
+Management Protocol (NDMP) version 4.  When you use rsh to 
+perform this transfer, the data flows from the source machine 
+to the rsh host and then again from the rsh host to the 
+destination machine.  This can put a double load on the network 
+and unneccessary load on the rsh host.  With ndmpcopy, data is 
+transferred directly from the source machine to the destination 
+machine, and the NDMP host and network are not burdoned with 
+the extra load.
+
+When you run ndmpcopy it will contact the NDMP server processes on
+the source and destination machines and authenticate the connection.
+It will then initiate a backup on the source machine and a restore
+on the destination machine.  The transfer will happen between the
+two machines directly, only burdoning the NDMP host with status
+messages instead of all of the backup data.  Initial tests have
+demonstrated double the performance when using ndmpcopy instead
+of rsh.
+
+BUILDING THE ndmpcopy
+======================
+Pre-requisites:
+1. Sun Solaris 10 and above Operating System is required.
+2. GCC compiler
+3. GNU make
+
+To build ndmpcopy:
+
+ gmake
+
+To install it to $DESTDIR (by default ./proto):
+
+ gmake install
+
+COMPATIBILITY
+==============
+This version of ndmpcopy has been tested on NexentaStor system.

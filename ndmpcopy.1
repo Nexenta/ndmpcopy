@@ -1,0 +1,274 @@
+.\" $Id: //depot/tools/main/ndmptools/ndmpcopy-1.2/ndmpcopy.1#2 $
+.\"  Copyright (c) 1992-1997 Network Appliance, Inc. 
+.\"  All rights reserved. 
+.TH ndmpcopy 1 "03 Oct 1997"
+.SH NAME
+ndmpcopy \- copy directory trees over a network using the Network Data Management Protocol
+.SH SYNOPSIS
+.B ndmpcopy src_filer:src_dir dest_filer:dest_dir [ options ]
+.br
+.SH DESCRIPTION
+
+.I Ndmpcopy
+transfers data between NetApp filers using version 2 of
+the Network Data Management Protocol (NDMP).  This process is very
+similar to performing a
+.B dump 
+on the source filer and sending the
+output to 
+.B restore
+on the destination filer through rsh(1).  Using rsh(1)
+to perform this transfer is inefficient because the data may flow over
+the network multiple times and cause unnecessary load on the rsh
+host.
+.LP
+You must supply the source and destination.  The source has the
+format:
+
+.B src_filer:src_dir
+
+where 
+.B src_filer 
+is the name of the filer being copied from, and
+.B src_dir 
+is the absolute pathname of the directory being copied.
+
+The destination has the format
+
+.B dest_filer:dest_dir
+
+where 
+.B dest_filer is the name of the filer being copied to, and
+.B dest_dir 
+is the absolute pathname of the directory to which the source
+directory is being copied.  The destination directory is created if it
+does not already exist.
+
+.SH OPTIONS
+.TP
+.B \-sa
+Source authentication.  If this flag is followed by the word
+.B none,
+then no
+authentication is used.  If it is followed by a user specification
+then text authentication is used.  A user specification consists of
+
+.B "user:password"
+
+where
+.B user
+must be root and 
+.B password
+must be the console password of the source filer.
+Network Appliance filers currently support only text authentication.
+The default is text authentication with user root and no password.
+
+\fBOnly enter the password using this method if you don't mind giving the
+password away to anyone logged into the same machine.\fP
+.TP
+.B \-da
+Destination authentication.  If this flag is followed by the word
+.B none,
+then no
+authentication is used.  If it is followed by a user specification
+then text authentication is used.  A user specification consists of
+
+.B "user:password"
+
+where
+.B user
+must be root and 
+.B password
+must be the console password of the destination filer.
+Network Appliance filers currently support only text authentication.
+The default is text authentication with user root and no password.
+
+\fBOnly enter the password using this method if you don't mind giving the
+password away to anyone logged into the same machine.\fP
+.TP
+.B \-sport port
+NDMP port to use for the source filer.  This should normally be left
+unchanged.  The default is 10000.
+.TP
+.B \-dport port
+NDMP port to use for the destination filer.  This should normally be left
+unchanged.  The default is 10000.
+.TP
+.B \-dhost hostname
+Destination host for data transfer if it is not the same as the
+destination NDMP host.  This is useful if your destination host has
+multiple network interfaces and the bulk data should go over a
+different link than the NDMP connection.  One example of this would
+be if the filers are connected to the host running ndmpcopy via a
+10 Mb/s ethernet, but the filers are linked together by a 100 Mb/s
+ethernet as well.  The 
+.B hostname
+specified by -dhost should be the name or IP address of the 100 Mb/s
+interface on the destination machine.
+.TP
+.B \-level 0 - 9
+Without the -level option ndmpcopy always performs a level 0 dump.  When
+the -level option is provided the restore process is requested to
+"incrementally restore" the dumped files and uses the 'restore_symboltable'
+file in the process so that incremental dumps can be carried out.  Each
+restore will leave behind a 'restore_symboltable' file regardless of this
+option.
+.TP
+.B \-v
+Increase the verbosity.  The default (level 1) will display the dump
+log messages
+received from the dumping filer.  One -v (level 2) displays NDMP status
+information as well.
+.TP
+.B \-q
+Increase the quietness (Decrease the verbosity).  This flag will
+counteract any -v flags present.  If there are more -q flags than -v
+flags, no status information will be displayed.  Usually it doesn't
+make sense to specify both -q and -v, but it works.
+.TP
+.B \-dpass
+Enter different passwords for the source and destination NDMP hosts.
+This is only needed if not entering the password on the command-line.
+.TP
+.B \-d debug_level
+Specify the NDMP debug level.  A 
+of 65535 will display all NDMP protocol messages.
+.TP
+.B \-h
+Display the helpful usage message and default values for the optional flags.
+
+.SH RECOMMENDATIONS
+
+Avoid entering the filer password on the command line with the
+.B -sa
+and
+.B -da
+options.  Instead, allow ndmpcopy to prompt you for the password.
+If each filer has a different password, use the
+.B -dpass
+option.
+
+Perform large transfers in a few smaller
+chunks.  If it fails for some reason you only have to retransmit that
+chunk instead of the entire filesystem.   You may choose to divide
+the filesystem up by function (home directories, binaries, and source
+tree, for example), or by using the du(1) command (typically with the
+-s flag) to locate directories of approximately the same size.  This is
+best done at the top level to better insure that all data is copied.
+
+Perform the transfer on
+a single lightly used network during off-hours to avoid slowing down the
+transfer through a router or slowing down other hosts that may be trying
+to use the network.  Ndmpcopy streams as much data as possible across
+the network, and may cause a noticeable delay if done during peak hours.
+
+The dump output provides periodic (although infrequent) log messages
+showing how much of the filesystem has been transferred, and an
+approximate finishing time.  At the end of the transfer ndmpcopy will
+display the total time taken to transfer the data.  You can obtain
+more information by logging into one of the filers and running "sysstat 1".
+This will tell you the transfer rate, CPU load, and disk reads/writes
+on that filer.
+
+CAUTION: Avoid overwriting the /etc directory on the destination with
+the data from the source.  This can confuse the filer.  Transfer the
+top-level subdirectories individually, or transfer the whole
+filesystem to a subdirectory
+on the destination and move the desired files to the right place
+later.
+
+.SH EXAMPLES
+
+
+To copy the directory /home/bob from host fred to /home/bob on host
+barney using the default authentication method (user root, entering
+the password at the prompt). Run the following on the machine that
+has ndmpcopy installed:
+.IP
+.B example% ndmpcopy fred:/home/bob barney:/home/bob
+.B Password:[enter password]
+.LP
+\fBThe following examples use the "feature" that allows you to enter the
+filer password on the command line, showing it to everyone else logged
+into your system, and probably putting it into your shell history file.\fP
+.LP
+To copy the directory /home/ from host fred to / on host barney
+using no authentication on the fred and text authentication with
+user root and password ub2foo on barney. Run the following on the
+machine that has ndmpcopy installed:
+.IP
+.B example% ndmpcopy fred:/home barney:/ -sa none -da root:ub2foo
+.LP
+To copy everything on host pebbles to /pebbles on host bambam using
+user root and password rootpass and NDMP port 15000 instead of 10000
+on bambam. Run the following on any machine:
+.IP
+.B example% ndmpcopy pebbles:/ bambam:/pebbles
+.B -sa root:rootpass -da root:rootpass -dport 15000
+.LP
+To copy everything on host john to /monty on host cleese using
+user root and password rootpass and a private fast (say fddi)
+interface connection. Run the following on any machine:
+.IP
+.B example% ndmpcopy john:/ cleese:/monty
+.B -sa root:rootpass -da root:rootpass
+.B -dhost fddi_ip_addr
+
+.SH DIAGNOSTICS
+The NDMP error messages are often quite obscure.  This may provide
+some insight on what the common errors mean.
+
+ERROR: comm.c:402 system call (connect): Connection refused
+ndmp_open_connection: Could not open NDMP connection to host XXXXX.
+.IP
+    Check to make sure ndmpd is active on both filers by running
+    "ndmpd status" or just "ndmpd on".
+.LP
+On some occassions the restore will complete before the source filer
+has successfully sent all the dump trailer information and ndmpcopy
+will leave a message similar to:
+.IP
+filer: HALT: The operation was successful!
+Waiting for filer to halt too.
+(If it sits here forever, the transfer was successful,
+but the source filer has hung.  Press ^C.)
+.LP
+Simply stop the current ndmpcopy process, the data transfer has succeeded,
+however the filers have failed to inform each other of this fact!
+
+.SH "EXIT STATUS"
+.TP 4
+.B 0
+The transfer finished successfully.
+.TP
+.B >0
+An error occurred.
+.SH SEE ALSO
+.BR du (1),
+.BR dump (1),
+.BR restore (1),
+.BR rsh (1),
+
+.SH BUGS
+
+It is possible to enter an unencrypted password on the command line.
+
+A special mover mode is required for the destination NDMP server in
+order to support this utility.  The standard NDMP protocol has no
+provisions for this sort of transfer.  Currently only Network
+Appliance filers (kernel rev. 4.2 and up) are known to support this
+operation.
+
+When transferring from a high performance filer to a lower
+performance filer (eg. an F630 to an F540), the transfer may
+stall indefinitely due to a bug in the NDMP implementation or
+the dump/restore code.  This can be seen by running "sysstat 1"
+on either filer and monitoring the network throughput during
+stage 4 of the dump.  If very little data is being transmitted
+or received, this is probably the problem.  The transfer should
+work in the other direction.  There is no known workaround at this
+time.
+
+The destination NetApp filer will need to run DATA ONTAP rev. 4.3 or
+up for the -level option to function correctly.
+
